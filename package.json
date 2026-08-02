@@ -1,0 +1,22 @@
+{
+  "name": "invoscan",
+  "version": "1.0.0",
+  "description": "Handwritten Indian bill extraction & LLM model evaluation framework",
+  "main": "server/proxy.js",
+  "scripts": {
+    "dev": "node server/proxy.js",
+    "start": "node server/proxy.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "form-data": "^4.0.0",
+    "multer": "^2.2.0",
+    "sharp": "^0.35.3"
+  },
+  "engines": {
+  "node": ">=20.9.0"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "1785669966369-ChatGPT_Image_Aug_2__2026__04_55_56_PM.png": {
+    "vendor_name": "SRI KRISHNA HOTEL",
+    "invoice_number": "10587",
+    "date": "2026-02-08",
+    "amount_total": 410,
+    "currency": "INR",
+    "gst_number": "32ABCDE1234F1Z5",
+    "gst_amount": 9.75,
+    "gst_rate": 2.5,
+    "payment_method": "UPI",
+    "updatedAt": "2026-08-02T13:00:06.726Z"
+  },
+  "1785675891172-Screenshot_2026-08-02_183341.png": {
+    "vendor_name": "Sri Lakshmi Stores",
+    "invoice_number": "INV-2047",
+    "date": "2026-08-02",
+    "amount_total": 1119.3,
+    "currency": "INR",
+    "gst_number": null,
+    "gst_amount": 26.65,
+    "gst_rate": 2.5,
+    "payment_method": "UPI",
+    "updatedAt": "2026-08-02T13:21:36.181Z"
+  }
+}

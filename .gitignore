@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Environment & secrets
+.env
+
+# Uploaded bill images (keep locally, never commit)
+bills/
+uploads/
+
+# Results & ground truth (sensitive data)
+results/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*

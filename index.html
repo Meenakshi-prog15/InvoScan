@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InvoScan — Handwritten Bill Extraction & Model Evaluation</title>
+  <meta name="description" content="Compare Gemini, Claude, and GPT-4o on handwritten Indian bill extraction. Field-level accuracy scoring and Zoho Books integration." />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'></text></svg>" />
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Navbar ──────────────────────────────────────────────────────────── -->
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <a class="navbar-brand" href="#upload">
+     <img
+  src="/assets/invoscan-logo.png"
+  alt="InvoScan"
+  class="navbar-brand-logo"
+/>
+    </a>
+
+    <div class="navbar-nav">
+      <button class="nav-link active" data-view="upload" id="nav-upload" aria-current="page">
+        <span class="nav-icon"></span>
+        <span>Upload</span>
+      </button>
+      <button class="nav-link" data-view="compare" id="nav-compare">
+        <span class="nav-icon"></span>
+        <span>Extract</span>
+      </button>
+      <button class="nav-link" data-view="evaluate" id="nav-evaluate">
+        <span class="nav-icon"></span>
+        <span>Evaluate</span>
+      </button>
+      <button class="nav-link" data-view="report" id="nav-report">
+        <span class="nav-icon"></span>
+        <span>Report</span>
+      </button>
+    </div>
+
+    <div class="navbar-status">
+      <div class="status-dot" id="server-dot"></div>
+      <span id="server-status-text">Connecting...</span>
+    </div>
+  </nav>
+
+  <!-- ── Main Content ────────────────────────────────────────────────────── -->
+  <main class="main-content" role="main">
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         VIEW 1: UPLOAD
+         ══════════════════════════════════════════════════════════════════ -->
+    <section class="view active" id="view-upload" aria-label="Upload bills">
+      <div class="page-header">
+        <h1>Upload <span class="highlight">Handwritten Bills</span></h1>
+        <p>Upload 10–15 scanned or photographed handwritten Indian bills/receipts. Redact sensitive info before uploading.</p>
+      </div>
+
+      <!-- Redaction reminder -->
+      <div class="card mb-4" style="border-color: rgba(255,183,77,0.3); background: rgba(255,183,77,0.04);">
+        <div class="flex gap-3" style="align-items:flex-start;">
+          <span style="font-size:20px;flex-shrink:0;"></span>
+          <div>
+            <div style="font-weight:600;font-size:14px;color:var(--accent-amber);margin-bottom:4px;">Privacy Reminder</div>
+            <div style="font-size:13px;color:var(--text-secondary);">
+              Before uploading, please blur or redact: phone numbers, bank account numbers, full personal names, Aadhaar numbers, and any other PII. Bill images are sent to LLM APIs (Gemini/Claude/OpenAI) for extraction.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upload Zone -->
+      <div class="upload-zone" id="upload-zone" role="button" tabindex="0" aria-label="Drop bill images here or click to browse">
+        <span class="upload-icon"></span>
+        <h3>Drop bill images here</h3>
+        <p>Or click to browse your files</p>
+        <button class="btn btn-primary" id="upload-btn" onclick="event.stopPropagation()">
+          <span>📁</span> Choose Files
+        </button>
+        <div class="upload-hint">Supports JPEG, PNG, WebP · Max 20MB per file · Multiple files OK</div>
+        <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp" multiple style="display:none" aria-hidden="true" />
+      </div>
+
+      <!-- Upload Progress -->
+      <div id="upload-progress" class="hidden mt-4"></div>
+
+      <!-- Bills Gallery -->
+      <div class="section mt-6">
+        <div class="section-title">
+          <span> Uploaded Bills</span>
+          <span id="bill-count-badge" class="pill pill-blue">0 bills</span>
+          <button class="btn btn-ghost btn-sm" id="refresh-bills-btn"> Refresh</button>
+        </div>
+        <div id="bills-gallery" class="bills-grid">
+          <div class="empty-state" style="grid-column:1/-1;">
+            <div class="empty-state-icon"></div>
+            <h3>No bills yet</h3>
+            <p>Upload some handwritten bill images to get started</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         VIEW 2: EXTRACT & COMPARE
+         ══════════════════════════════════════════════════════════════════ -->
+    <section class="view" id="view-compare" aria-label="Extract and compare">
+      <div class="page-header">
+        <h1><span class="highlight">Extract & Compare</span> Models</h1>
+        <p>Select a bill, choose models, and compare extraction results side by side.</p>
+      </div>
+
+      <div class="compare-layout">
+        <!-- Left: Bill selector + preview -->
+        <div class="bill-preview-panel">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Select Bill</div>
+            </div>
+            <div id="compare-bill-selector" class="bill-selector">
+              <div class="empty-state" style="padding:20px;">
+                <div style="font-size:24px;"></div>
+                <p style="font-size:12px;">Upload bills first</p>
+              </div>
+            </div>
+            <div class="divider"></div>
+            <img id="compare-bill-preview" class="bill-preview-img hidden" alt="Selected bill preview" />
+            <div id="compare-no-preview" style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">
+              Select a bill to preview
+            </div>
+          </div>
+
+          <!-- Model selection -->
+          <div class="card mt-4">
+            <div class="card-header">
+              <div class="card-title">Models</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;" id="model-checkboxes">
+              <!-- Rendered by JS -->
+            </div>
+            <div class="divider"></div>
+            <button class="btn btn-primary w-full" id="extract-btn" disabled>
+              <span></span> Run Extraction
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: Comparison results -->
+        <div>
+          <div id="compare-placeholder" class="card flex-center" style="min-height:400px;">
+            <div class="empty-state">
+              <div class="empty-state-icon"></div>
+              <h3>Ready to extract</h3>
+              <p>Select a bill and click "Run Extraction"</p>
+            </div>
+          </div>
+          <div id="compare-results" class="hidden">
+            <div class="flex-between mb-4">
+              <div>
+                <div style="font-size:15px;font-weight:700;" id="compare-bill-name">—</div>
+                <div style="font-size:12px;color:var(--text-muted);" id="compare-timestamp">—</div>
+              </div>
+              <div class="flex gap-2">
+                <button class="btn btn-secondary btn-sm" id="export-to-gt-btn"> Set as Ground Truth</button>
+                <button class="btn btn-secondary btn-sm" id="send-to-zoho-btn"> Send to Zoho</button>
+              </div>
+            </div>
+            <div class="comparison-grid" id="model-results-grid">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         VIEW 3: EVALUATE
+         ══════════════════════════════════════════════════════════════════ -->
+    <section class="view" id="view-evaluate" aria-label="Evaluate accuracy">
+      <div class="page-header">
+        <h1>Field-Level <span class="highlight">Accuracy Scoring</span></h1>
+        <p>Enter ground truth for each bill. InvoScan scores each model on each field using fuzzy matching.</p>
+      </div>
+
+      <div class="grid-2">
+        <!-- Ground Truth Panel -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"> Ground Truth Entry</div>
+            <select id="gt-bill-select" class="form-select" style="max-width:200px;padding:6px 10px;font-size:13px;">
+              <option value="">Select a bill…</option>
+            </select>
+          </div>
+
+          <div id="gt-form-container">
+            <div class="empty-state" style="padding:30px;">
+              <div class="empty-state-icon"></div>
+              <h3>Select a bill</h3>
+              <p style="font-size:13px;">Choose a bill from the dropdown to enter its correct values</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scoring Panel -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Scoring Results</div>
+            <div class="flex gap-2">
+              <button class="btn btn-ghost btn-sm" id="score-all-btn">Score All Bills</button>
+            </div>
+          </div>
+          <div id="scoring-results-container">
+            <div class="empty-state" style="padding:30px;">
+              <div class="empty-state-icon"></div>
+              <h3>No scores yet</h3>
+              <p style="font-size:13px;">Enter ground truth and click "Score" to see per-field accuracy</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scoring methodology note -->
+      <div class="card mt-4" style="border-color:rgba(0,212,255,0.2);">
+        <div class="card-title mb-4">Scoring Methodology</div>
+        <div class="grid-3" style="gap:16px;">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--accent-blue);margin-bottom:6px;">TEXT FIELDS</div>
+            <div style="font-size:13px;color:var(--text-secondary);">Levenshtein fuzzy ratio ≥ 0.85 =  Correct<br/>Case-insensitive, trims whitespace</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">vendor_name, invoice_number, gst_number</div>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--accent-amber);margin-bottom:6px;">NUMERIC FIELDS</div>
+            <div style="font-size:13px;color:var(--text-secondary);">Within ±2% of ground truth =  Correct</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">amount_total, gst_amount</div>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--accent-green);margin-bottom:6px;">DATE & ENUM FIELDS</div>
+            <div style="font-size:13px;color:var(--text-secondary);">Exact match after normalization =  Correct</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">date (YYYY-MM-DD), currency</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         VIEW 4: REPORT
+         ══════════════════════════════════════════════════════════════════ -->
+    <section class="view" id="view-report" aria-label="Accuracy report">
+      <div class="page-header">
+        <h1>Model <span class="highlight">Evaluation Report</span></h1>
+        <p>Accuracy per model × per field, cost analysis, and recommendation.</p>
+      </div>
+
+      <div id="report-empty" class="card flex-center" style="min-height:300px;">
+        <div class="empty-state">
+          <div class="empty-state-icon"></div>
+          <h3>No data yet</h3>
+          <p>Score at least one bill in the Evaluate tab to generate the report</p>
+        </div>
+      </div>
+
+      <div id="report-content" class="hidden">
+        <!-- Recommendation -->
+        <div class="section">
+          <div class="section-title">Recommendation</div>
+          <div id="recommendation-card" class="recommendation-card"></div>
+        </div>
+
+        <!-- Overall accuracy bars -->
+        <div class="section">
+          <div class="section-title">Overall Accuracy per Model</div>
+          <div class="card">
+            <div id="accuracy-bars" class="flex-between" style="gap:16px;align-items:stretch;flex-wrap:wrap;">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Accuracy heatmap -->
+        <div class="section">
+          <div class="section-title">Accuracy Heatmap — Field × Model</div>
+          <div class="card">
+            <div class="score-table-wrap">
+              <table class="heatmap-table" id="heatmap-table">
+                <thead id="heatmap-head"></thead>
+                <tbody id="heatmap-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cost analysis -->
+        <div class="section">
+          <div class="section-title"> Cost Analysis</div>
+          <div class="cost-grid" id="cost-grid"></div>
+        </div>
+
+        <!-- Zoho status -->
+        <div class="section">
+          <div class="section-title"> Zoho Books Integration</div>
+          <div class="card">
+            <div class="flex-between mb-4" style="flex-wrap:wrap;gap:12px;">
+              <div id="zoho-connection-status" class="zoho-status checking">
+                <span></span> Checking Zoho connection...
+              </div>
+              <div class="flex gap-2">
+                <button class="btn btn-secondary btn-sm" id="test-zoho-btn">🔌 Test Connection</button>
+                <button class="btn btn-primary btn-sm" id="export-all-zoho-btn"> Export All to Zoho</button>
+              </div>
+            </div>
+            <div id="zoho-export-log" style="font-size:12px;color:var(--text-muted);max-height:200px;overflow-y:auto;"></div>
+          </div>
+        </div>
+
+        <!-- Export buttons -->
+        <div class="flex gap-3 mt-4">
+          <button class="btn btn-secondary" id="export-json-btn"> Export JSON</button>
+          <button class="btn btn-secondary" id="export-csv-btn">Export CSV</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ── Toast Container ───────────────────────────────────────────────────── -->
+<div id="toast-container" role="region" aria-live="polite" aria-label="Notifications"></div>
+
+<!-- ── Redaction Modal ───────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="redaction-modal" role="dialog" aria-modal="true" aria-labelledby="redaction-title">
+  <div class="modal">
+    <div class="modal-title" id="redaction-title"> Privacy Check</div>
+    <div class="modal-body">
+      Before sending these bill images to AI APIs, confirm you've removed or blurred:
+      <ul style="margin-top:12px;padding-left:18px;display:flex;flex-direction:column;gap:6px;">
+        <li> Phone numbers</li>
+        <li> Bank account / card numbers</li>
+        <li> Full names of individuals</li>
+        <li> Aadhaar or PAN numbers</li>
+      </ul>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="redaction-cancel-btn">Cancel</button>
+      <button class="btn btn-primary" id="redaction-confirm-btn"> Yes, proceed with extraction</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Zoho Export Modal ──────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="zoho-modal" role="dialog" aria-modal="true" aria-labelledby="zoho-modal-title">
+  <div class="modal">
+    <div class="modal-title" id="zoho-modal-title">Create Zoho Expense</div>
+    <div class="modal-body" id="zoho-modal-body">Select which model's extraction to use for creating the Zoho Books expense entry.</div>
+    <div id="zoho-modal-model-select" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="zoho-modal-cancel">Cancel</button>
+      <button class="btn btn-primary" id="zoho-modal-confirm">Create Expense</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── JS Modules ─────────────────────────────────────────────────────────── -->
+<script src="/js/config.js"></script>
+<script src="/js/app.js"></script>
+<script src="/js/upload.js"></script>
+<script src="/js/extractor.js"></script>
+<script src="/js/evaluator.js"></script>
+<script src="/js/zoho.js"></script>
+<script src="/js/report.js"></script>
+</body>
+</html>
