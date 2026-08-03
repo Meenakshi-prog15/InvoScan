@@ -109,6 +109,15 @@ The project works with only one configured model. Models without valid keys are 
 4. In **Evaluate**, enter human-verified ground truth and score the result.
 5. Use **Report** to inspect aggregate accuracy and export JSON or CSV.
 
+## Sample bills
+
+The repository includes two fictional handwritten bills for reproducible testing:
+
+- [`samples/sri-krishna-hotel-bill.png`](samples/sri-krishna-hotel-bill.png) — restaurant receipt with line items, GST, total, and UPI payment.
+- [`samples/sri-lakshmi-stores-bill.png`](samples/sri-lakshmi-stores-bill.png) — retail receipt with quantities, rates, GST, and grand total.
+
+These images were created as synthetic test data. Their names, addresses, tax identifiers, transaction details, and signatures are fictional and must not be treated as genuine financial documents.
+
 ## Privacy and security
 
 - Never commit `.env`; it is excluded by `.gitignore`.
@@ -127,6 +136,7 @@ InvoScan/
 |- js/                  Browser-side UI and evaluation logic
 |- server/proxy.js      Express API and provider integrations
 |- ground_truth/        Local benchmark ground truth
+|- samples/             Synthetic sample bills for testing
 |- .env.example         Safe configuration template
 |- index.html           Single-page interface
 |- package.json         Scripts and dependencies
